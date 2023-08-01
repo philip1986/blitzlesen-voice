@@ -1,0 +1,10 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "blitzlesen-voice": ["../src/index"],
+      "blitzlesen-voice/*": ["../src/*"]
+    }
+  }
+}
