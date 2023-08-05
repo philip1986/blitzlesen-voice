@@ -11,8 +11,15 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
+    "assetBundlePatterns": ["**/*"],
+    "plugins": [
+      [
+        "../app.plugin.js",
+        {
+          "speechRecognitionPermission": "????",
+          "microphonePermission": "mic ???"
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,

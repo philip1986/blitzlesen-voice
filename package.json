@@ -21,13 +21,13 @@
     "blitzlesen-voice",
     "BlitzlesenVoice"
   ],
-  "repository": "https://github.com/philip1986/ /blitzlesen-voice",
+  "repository": "https://github.com/philip1986/blitzlesen-voice",
   "bugs": {
-    "url": "https://github.com/philip1986/ /blitzlesen-voice/issues"
+    "url": "https://github.com/philip1986/blitzlesen-voice/issues"
   },
   "author": "Philip <> (https://github.com/philip1986/ )",
   "license": "MIT",
-  "homepage": "https://github.com/philip1986/ /blitzlesen-voice#readme",
+  "homepage": "https://github.com/philip1986/blitzlesen-voice#readme",
   "dependencies": {},
   "devDependencies": {
     "@types/react": "^18.0.25",

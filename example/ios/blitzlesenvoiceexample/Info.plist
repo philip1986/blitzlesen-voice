@@ -48,6 +48,10 @@
         </dict>
       </dict>
     </dict>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>mic ???</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>????</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
