@@ -20,9 +20,12 @@ export default function App() {
     async function listen() {
       console.log("Listening for", word);
 
-      const [err, res] = await BlitzlesenVoice.listenFor("de_DE", word, [
-        "Fahrrad",
-      ]);
+      const [err, res] = await BlitzlesenVoice.listenFor(
+        "de_DE",
+        word,
+        ["Fahrrad"],
+        800
+      );
 
       console.log(err, res);
 

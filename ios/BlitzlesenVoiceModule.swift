@@ -67,6 +67,7 @@ public class Voice {
 
   func startRecording(target: String, alternatives: [String], timeout: Int, completion: @escaping (Error?, Bool?, String?) -> Void) throws {
     print("start recording ...")
+    var isComplete = false
 
     if Voice.hasPermissions == false {
       return completion(NSError(domain: "No permissions", code: 0, userInfo: nil), nil, nil)
@@ -104,7 +105,10 @@ public class Voice {
         if error!._code != 1110 {
           self.stopRecording()
           print("error \(error!.localizedDescription)")
-          completion(error, nil, nil)
+          if !isComplete {
+            isComplete = true
+            completion(error, nil, nil)
+          }
         }
         return
       }
@@ -115,14 +119,22 @@ public class Voice {
           print("stop")
           self.timeout?.invalidate()
           self.stopRecording()
-          completion(nil, false, transcription.formattedString)
+
+          if !isComplete {
+            isComplete = true
+            completion(nil, false, transcription.formattedString)
+          }
         }
 
         print("\(transcription.formattedString)")
         if self.isTarget(text: transcription.formattedString, target: target, alternatives: alternatives) {
           self.timeout?.invalidate()
           self.stopRecording()
-          completion(nil, true, transcription.formattedString)
+
+          if !isComplete {
+            isComplete = true
+            completion(nil, true, transcription.formattedString)
+          }
         }
       }
     }
