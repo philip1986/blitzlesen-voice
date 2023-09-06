@@ -7,6 +7,10 @@ export type VoiceResponse = {
   recognisedText: string;
 };
 
+type Error = {
+  error: string;
+};
+
 export function listenFor(
   locale: string,
   word: string,
