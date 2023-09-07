@@ -38,8 +38,13 @@ public class BlitzlesenVoiceModule: Module {
       voice?.stopRecording()
     }
 
-    Function("getPermissions") { () in
-      if Voice.hasPermissions == false { voice?.getPermissions() }
+    AsyncFunction("requestPermissions") { (promise: Promise) in
+      if Voice.hasPermissions == true {
+        promise.resolve(true)
+      }
+      Voice.getPermissions { hasPermissions in
+        promise.resolve(hasPermissions)
+      }
     }
   }
 }
@@ -54,7 +59,7 @@ public class Voice {
   private var inputNode: AVAudioInputNode!
 
   init(locale: String) {
-    if Voice.hasPermissions == false { getPermissions() }
+    if Voice.hasPermissions == false { Voice.getPermissions { _ in } }
 
     print("init voice \(locale)")
     speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: locale))
@@ -64,14 +69,16 @@ public class Voice {
     return recognitionTask != nil
   }
 
-  func getPermissions() {
+  static func getPermissions(completion: @escaping (Bool) -> Void) {
     SFSpeechRecognizer.requestAuthorization { authStatus in
       OperationQueue.main.addOperation {
         switch authStatus {
         case .authorized:
           Voice.hasPermissions = true
+          completion(true)
         default:
           Voice.hasPermissions = false
+          completion(false)
         }
       }
     }

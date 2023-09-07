@@ -35,6 +35,6 @@ export function stopListening(): void {
   return BlitzlesenVoiceModule.stopListening();
 }
 
-export function requestPermissions(): void {
-  BlitzlesenVoiceModule.requestPermissions();
+export function requestPermissions(): Promise<boolean> {
+  return BlitzlesenVoiceModule.requestPermissions();
 }

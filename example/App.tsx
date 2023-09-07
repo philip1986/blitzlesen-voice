@@ -9,8 +9,20 @@ export default function App() {
   const [counter, setCounter] = useState(0);
   const [text, setText] = useState(phrases[counter]);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
+    console.log("Requesting permissions");
+
+    BlitzlesenVoice.requestPermissions().then((res) => {
+      console.log("Permissions", setHasPermission(res));
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!hasPermission) {
+      return;
+    }
     async function listen() {
       console.log("Listening for", text, BlitzlesenVoice.isListening());
       if (BlitzlesenVoice.isListening()) {
@@ -40,6 +52,14 @@ export default function App() {
 
     listen();
   }, [text]);
+
+  if (!hasPermission) {
+    return (
+      <View style={styles.container}>
+        <Text>No permission</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
