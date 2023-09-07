@@ -29,14 +29,23 @@ public class BlitzlesenVoiceModule: Module {
         ])
       }
     }
+
     Function("isListening") { () in
       voice?.isListening()
+    }
+
+    Function("stopListening") { () in
+      voice?.stopRecording()
+    }
+
+    Function("getPermissions") { () in
+      if Voice.hasPermissions == false { voice?.getPermissions() }
     }
   }
 }
 
 public class Voice {
-  private static var hasPermissions = false
+  static var hasPermissions = false
   private var recognitionTask: SFSpeechRecognitionTask?
   private var timeout: Timer?
   private var speechRecognizer: SFSpeechRecognizer?
@@ -60,10 +69,9 @@ public class Voice {
       OperationQueue.main.addOperation {
         switch authStatus {
         case .authorized:
-          print("authorised..")
           Voice.hasPermissions = true
         default:
-          print("none")
+          Voice.hasPermissions = false
         }
       }
     }

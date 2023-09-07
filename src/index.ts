@@ -30,3 +30,11 @@ export function listenFor(
 export function isListening(): boolean | null {
   return BlitzlesenVoiceModule.isListening();
 }
+
+export function stopListening(): void {
+  return BlitzlesenVoiceModule.stopListening();
+}
+
+export function requestPermissions(): void {
+  BlitzlesenVoiceModule.requestPermissions();
+}
