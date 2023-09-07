@@ -19,18 +19,18 @@ public class BlitzlesenVoiceModule: Module {
   public func definition() -> ModuleDefinition {
     Name("BlitzlesenVoice")
 
-    AsyncFunction("listenFor") { (locale: String, target: String, alternatives: [String], timeout: Int, promise: Promise) in
-      print("listenFor \(target)")
-      print("alternatives \(alternatives)")
-
+    AsyncFunction("listenFor") { (locale: String, target: String, alternatives: [String], timeout: Int, onDeviceRecognition: Bool, promise: Promise) in
       voice = Voice(locale: locale)
 
-      try voice?.startRecording(target: target, alternatives: alternatives, timeout: timeout) { error, isCorrect, recognisedText in
+      try voice?.startRecording(target: target, alternatives: alternatives, timeout: timeout, onDeviceRecognition: onDeviceRecognition) { error, isCorrect, recognisedText in
         promise.resolve([
           ListenForError(error: Field(wrappedValue: error?.localizedDescription)),
           ListenForResponse(isCorrect: Field(wrappedValue: isCorrect), recognisedText: Field(wrappedValue: recognisedText)),
         ])
       }
+    }
+    Function("isListening") { () in
+      voice?.isListening()
     }
   }
 }
@@ -51,6 +51,10 @@ public class Voice {
     speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: locale))
   }
 
+  func isListening() -> Bool {
+    return recognitionTask != nil
+  }
+
   func getPermissions() {
     SFSpeechRecognizer.requestAuthorization { authStatus in
       OperationQueue.main.addOperation {
@@ -65,8 +69,10 @@ public class Voice {
     }
   }
 
-  func startRecording(target: String, alternatives: [String], timeout: Int, completion: @escaping (Error?, Bool?, String?) -> Void) throws {
+  func startRecording(target: String, alternatives: [String], timeout: Int, onDeviceRecognition: Bool, completion: @escaping (Error?, Bool?, String?) -> Void) throws {
     print("start recording ...")
+    if recognitionTask != nil { stopRecording() }
+
     var isComplete = false
 
     if Voice.hasPermissions == false {
@@ -96,9 +102,8 @@ public class Voice {
     recognitionRequest.shouldReportPartialResults = true
 
     recognitionRequest.taskHint = SFSpeechRecognitionTaskHint.dictation
-    if speechRecognizer?.supportsOnDeviceRecognition == true {
-      recognitionRequest.requiresOnDeviceRecognition = true
-    }
+
+    recognitionRequest.requiresOnDeviceRecognition = onDeviceRecognition == true && speechRecognizer?.supportsOnDeviceRecognition == true
 
     recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
       if error != nil {
@@ -147,8 +152,13 @@ public class Voice {
 
   func stopRecording() {
     recognitionTask?.cancel()
+    recognitionTask?.finish()
+
     audioEngine.stop()
     inputNode?.removeTap(onBus: 0)
+    while !(recognitionTask?.isCancelled ?? true) {
+      Thread.sleep(forTimeInterval: 0.1)
+    }
     recognitionRequest?.endAudio()
     recognitionRequest = nil
     recognitionTask = nil

@@ -4,48 +4,47 @@ import * as BlitzlesenVoice from "blitzlesen-voice";
 import { useEffect, useState } from "react";
 
 export default function App() {
-  const words = [
-    "Hallo ich bin Philip",
-    "Maus",
-    "Klaus",
-    "das ist",
-    "ein Test",
-  ];
+  const phrases = ["Hallo I am Philip", "that's a test", "is it working"];
 
   const [counter, setCounter] = useState(0);
-  const [word, setWord] = useState(words[counter]);
+  const [text, setText] = useState(phrases[counter]);
   const [isCorrect, setIsCorrect] = useState(false);
 
   useEffect(() => {
     async function listen() {
-      console.log("Listening for", word);
+      console.log("Listening for", text, BlitzlesenVoice.isListening());
+      if (BlitzlesenVoice.isListening()) {
+        return;
+      }
 
       const [err, res] = await BlitzlesenVoice.listenFor(
-        "de_DE",
-        word,
-        ["Fahrrad"],
+        "en_US",
+        text,
+        ["it's ok"],
         800
       );
 
-      console.log(err, res);
+      console.log(res.recognisedText);
 
       setIsCorrect(res.isCorrect);
       if (!res.isCorrect) {
+        console.log("Wrong, try again!!");
+
         listen();
         return;
       }
-      const nextWord = (counter + 1) % words.length;
+      const nextWord = (counter + 1) % phrases.length;
       setCounter(nextWord);
-      setWord(words[nextWord]);
+      setText(phrases[nextWord]);
     }
 
     listen();
-  }, [word]);
+  }, [text]);
 
   return (
     <View style={styles.container}>
-      <Text>{word}</Text>
-      <Text>{isCorrect}</Text>
+      <Text>{text}</Text>
+      <Text>{isCorrect ? "Right" : "Wrong"}</Text>
     </View>
   );
 }

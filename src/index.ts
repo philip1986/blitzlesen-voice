@@ -15,7 +15,18 @@ export function listenFor(
   locale: string,
   word: string,
   alternatives: string[],
-  timeout: number = 1000
+  timeout: number = 1000,
+  onDeviceRecognition: boolean = false
 ): Promise<[Error, VoiceResponse]> {
-  return BlitzlesenVoiceModule.listenFor(locale, word, alternatives, timeout);
+  return BlitzlesenVoiceModule.listenFor(
+    locale,
+    word,
+    alternatives,
+    timeout,
+    onDeviceRecognition
+  );
+}
+
+export function isListening(): boolean | null {
+  return BlitzlesenVoiceModule.isListening();
 }
