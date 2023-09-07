@@ -41,9 +41,10 @@ public class BlitzlesenVoiceModule: Module {
     AsyncFunction("requestPermissions") { (promise: Promise) in
       if Voice.hasPermissions == true {
         promise.resolve(true)
-      }
-      Voice.getPermissions { hasPermissions in
-        promise.resolve(hasPermissions)
+      } else {
+        Voice.getPermissions { hasPermissions in
+          promise.resolve(hasPermissions)
+        }
       }
     }
   }
