@@ -10,13 +10,22 @@ export default function App() {
   const [text, setText] = useState(phrases[counter]);
   const [isCorrect, setIsCorrect] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
+  const [volume, setVolume] = useState(0);
 
   useEffect(() => {
     console.log("Requesting permissions");
 
     BlitzlesenVoice.requestPermissions().then((res) => {
-      console.log("Permissions", setHasPermission(res));
+      setHasPermission(res);
     });
+  }, []);
+
+  useEffect(() => {
+    const subscription = BlitzlesenVoice.addVolumeListener(({ volume }) => {
+      setVolume(volume);
+    });
+
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -51,7 +60,7 @@ export default function App() {
     }
 
     listen();
-  }, [text]);
+  }, [text, hasPermission]);
 
   if (!hasPermission) {
     return (
@@ -64,7 +73,7 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text>{text}</Text>
-      <Text>{isCorrect ? "Right" : "Wrong"}</Text>
+      <Text>Volume: {volume}</Text>
     </View>
   );
 }

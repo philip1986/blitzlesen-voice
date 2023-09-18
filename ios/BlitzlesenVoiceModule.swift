@@ -19,8 +19,10 @@ public class BlitzlesenVoiceModule: Module {
   public func definition() -> ModuleDefinition {
     Name("BlitzlesenVoice")
 
+    Events("onVolumeChange")
+
     AsyncFunction("listenFor") { (locale: String, target: String, alternatives: [String], timeout: Int, onDeviceRecognition: Bool, promise: Promise) in
-      voice = Voice(locale: locale)
+      voice = Voice(locale: locale, sendEvent: sendEvent)
 
       try voice?.startRecording(target: target, alternatives: alternatives, timeout: timeout, onDeviceRecognition: onDeviceRecognition) { error, isCorrect, recognisedText in
         promise.resolve([
@@ -58,9 +60,11 @@ public class Voice {
   private let audioEngine = AVAudioEngine()
   private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
   private var inputNode: AVAudioInputNode!
+  private var sendEvent: (String, [String: Any]) -> Void = { _, _ in }
 
-  init(locale: String) {
+  init(locale: String, sendEvent: @escaping (String, [String: Any]) -> Void) {
     if Voice.hasPermissions == false { Voice.getPermissions { _ in } }
+    self.sendEvent = sendEvent
 
     print("init voice \(locale)")
     speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: locale))
@@ -85,6 +89,29 @@ public class Voice {
     }
   }
 
+  func getVolumeLevel(buffer: AVAudioPCMBuffer) {
+    let arraySize = Int(buffer.frameLength)
+    let channelCount = Int(buffer.format.channelCount)
+
+    var magnitude: Float = 0.0
+    for i in 0 ..< channelCount {
+      let firstSample = buffer.format.isInterleaved ? i : i * arraySize
+
+      for j in stride(from: firstSample, to: arraySize, by: buffer.stride * 2) {
+        let channels = UnsafeBufferPointer(start: buffer.floatChannelData, count: Int(buffer.format.channelCount))
+        let floats = UnsafeBufferPointer(start: channels[0], count: Int(buffer.frameLength))
+
+        magnitude += sqrt(pow(floats[j], 2) + pow(floats[j + buffer.stride], 2))
+      }
+    }
+
+    let volume = round(1000 * Float(magnitude) / Float(arraySize))
+
+    self.sendEvent("onVolumeChange", [
+      "volume": volume,
+    ])
+  }
+
   func startRecording(target: String, alternatives: [String], timeout: Int, onDeviceRecognition: Bool, completion: @escaping (Error?, Bool?, String?) -> Void) throws {
     print("start recording ...")
     if recognitionTask != nil { stopRecording() }
@@ -105,8 +132,10 @@ public class Voice {
 
     inputNode = audioEngine.inputNode
     inputNode?.removeTap(onBus: 0)
+
     let recordingFormat = inputNode?.outputFormat(forBus: 0)
     inputNode?.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
+      self.getVolumeLevel(buffer: buffer)
       self.recognitionRequest?.append(buffer)
     }
 
