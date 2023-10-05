@@ -23,7 +23,7 @@ public class BlitzlesenVoiceModule: Module {
 
     AsyncFunction("listenFor") { (locale: String, target: String, alternatives: [String], timeout: Int, onDeviceRecognition: Bool, promise: Promise) in
       voice = Voice(locale: locale, sendEvent: sendEvent)
-
+        
       try voice?.startRecording(target: target, alternatives: alternatives, timeout: timeout, onDeviceRecognition: onDeviceRecognition) { error, isCorrect, recognisedText in
         promise.resolve([
           ListenForError(error: Field(wrappedValue: error?.localizedDescription)),
@@ -196,14 +196,12 @@ public class Voice {
   }
 
   func stopRecording() {
-    recognitionTask?.cancel()
     recognitionTask?.finish()
 
     audioEngine.stop()
     inputNode?.removeTap(onBus: 0)
-    while !(recognitionTask?.isCancelled ?? true) {
-      Thread.sleep(forTimeInterval: 0.1)
-    }
+    Thread.sleep(forTimeInterval: 0.1)
+
     recognitionRequest?.endAudio()
     recognitionRequest = nil
     recognitionTask = nil
