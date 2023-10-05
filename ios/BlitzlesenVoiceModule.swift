@@ -134,7 +134,7 @@ public class Voice {
     inputNode?.removeTap(onBus: 0)
 
     let recordingFormat = inputNode?.outputFormat(forBus: 0)
-    inputNode?.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
+    inputNode?.installTap(onBus: 0, bufferSize: 512, format: recordingFormat) { (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
       self.getVolumeLevel(buffer: buffer)
       self.recognitionRequest?.append(buffer)
     }
@@ -149,6 +149,8 @@ public class Voice {
     recognitionRequest.taskHint = SFSpeechRecognitionTaskHint.dictation
 
     recognitionRequest.requiresOnDeviceRecognition = onDeviceRecognition == true && speechRecognizer?.supportsOnDeviceRecognition == true
+      
+    speechRecognizer?.queue.qualityOfService = .userInteractive
 
     recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
       if error != nil {
@@ -176,7 +178,7 @@ public class Voice {
           }
         }
 
-        print("\(transcription.formattedString)")
+        print(">> \(transcription.formattedString)")
         if self.isTarget(text: transcription.formattedString, target: target, alternatives: alternatives) {
           self.timeout?.invalidate()
           self.stopRecording()
