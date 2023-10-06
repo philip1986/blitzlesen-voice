@@ -49,6 +49,10 @@ public class BlitzlesenVoiceModule: Module {
         }
       }
     }
+
+    OnDestroy() { 
+      voice?.stopRecording()
+    }
   }
 }
 
