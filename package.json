@@ -13,7 +13,9 @@
     "prepublishOnly": "expo-module prepublishOnly",
     "expo-module": "expo-module",
     "open:ios": "open -a \"Xcode\" example/ios",
-    "open:android": "open -a \"Android Studio\" example/android"
+    "open:android": "open -a \"Android Studio\" example/android",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "keywords": [
     "react-native",
@@ -28,11 +30,18 @@
   "author": "Philip <> (https://github.com/philip1986/ )",
   "license": "MIT",
   "homepage": "https://github.com/philip1986/blitzlesen-voice#readme",
-  "dependencies": {},
+  "dependencies": {
+    "expo": "~49.0.13",
+    "expo-splash-screen": "~0.20.5",
+    "expo-status-bar": "~1.6.0",
+    "react": "18.2.0",
+    "react-native": "0.72.5"
+  },
   "devDependencies": {
     "@types/react": "^18.0.25",
     "expo-module-scripts": "^3.0.11",
-    "expo-modules-core": "^1.5.7"
+    "expo-modules-core": "^1.5.7",
+    "@babel/core": "^7.20.0"
   },
   "peerDependencies": {
     "expo": "*",

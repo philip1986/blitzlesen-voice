@@ -51,7 +51,7 @@
     <key>NSMicrophoneUsageDescription</key>
     <string>mic ???</string>
     <key>NSSpeechRecognitionUsageDescription</key>
-    <string>????</string>
+    <string>speech ????</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

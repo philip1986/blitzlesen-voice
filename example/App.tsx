@@ -3,11 +3,28 @@ import { StyleSheet, Text, View } from "react-native";
 import * as BlitzlesenVoice from "blitzlesen-voice";
 import { useEffect, useState } from "react";
 
+interface Word {
+  word: string;
+  isCorrect: boolean;
+}
+
+function toWords(text: string): Word[] {
+  return text.split(" ").map((w) => ({
+    word: w,
+    isCorrect: false,
+  }));
+}
+
 export default function App() {
-  const phrases = ["Hallo I am Philip", "that's a test", "is it working"];
+  const phrases = [
+    "Auf dem Tisch lag eine schwarze Katze",
+    "Sie war sehr müde",
+    "test"
+  ];
 
   const [counter, setCounter] = useState(0);
-  const [text, setText] = useState(phrases[counter]);
+  const [text, setText] = useState(toWords(phrases[counter]));
+
   const [isCorrect, setIsCorrect] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
   const [volume, setVolume] = useState(0);
@@ -29,23 +46,34 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const subscription = BlitzlesenVoice.addPartialResultListener(
+      ({partialResult} ) => { 
+        setText(partialResult);
+      }
+    );
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     if (!hasPermission) {
       return;
     }
     async function listen() {
-      console.log("Listening for", text, BlitzlesenVoice.isListening());
+      // console.log("Listening for", text, BlitzlesenVoice.isListening());
       if (BlitzlesenVoice.isListening()) {
         return;
       }
 
       const [err, res] = await BlitzlesenVoice.listenFor(
-        "en_US",
-        text,
+        "de-DE",
+        text.map((w) => w.word).join(" "),
         ["it's ok"],
-        800
+        20000,
+        false
       );
 
-      console.log(res.recognisedText);
+      console.log('>>>>>', res);
 
       setIsCorrect(res.isCorrect);
       if (!res.isCorrect) {
@@ -56,7 +84,7 @@ export default function App() {
       }
       const nextWord = (counter + 1) % phrases.length;
       setCounter(nextWord);
-      setText(phrases[nextWord]);
+      setText(toWords(phrases[nextWord]));
     }
 
     listen();
@@ -72,7 +100,13 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text>{text}</Text>
+      <Text>
+        {text.map((w, i) => (
+          <Text key={i} style={{ color: w.isCorrect ? "grey" : "black" }}>
+            {w.word}{" "}
+          </Text>
+        ))}
+      </Text>
       <Text>Volume: {volume}</Text>
     </View>
   );

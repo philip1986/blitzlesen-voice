@@ -3,9 +3,16 @@
 import { EventEmitter, Subscription } from "expo-modules-core";
 import BlitzlesenVoiceModule from "./BlitzlesenVoiceModule";
 
+type WordResult = {
+  word: string;
+  isCorrect: boolean;
+  duration: number;
+};
+
 export type VoiceResponse = {
   isCorrect: boolean;
   recognisedText: string;
+  words: WordResult[];
 };
 
 type Error = {
@@ -16,14 +23,14 @@ const emitter = new EventEmitter(BlitzlesenVoiceModule);
 
 export function listenFor(
   locale: string,
-  word: string,
+  text: string,
   alternatives: string[],
   timeout: number = 1000,
   onDeviceRecognition: boolean = false
 ): Promise<[Error, VoiceResponse]> {
   return BlitzlesenVoiceModule.listenFor(
     locale,
-    word,
+    text,
     alternatives,
     timeout,
     onDeviceRecognition
@@ -46,8 +53,18 @@ export type VolumeChangeEvent = {
   volume: number;
 };
 
+export type PartialResultEvent = { 
+  partialResult: WordResult[];
+}
+
 export function addVolumeListener(
   listener: (event: VolumeChangeEvent) => void
 ): Subscription {
   return emitter.addListener<VolumeChangeEvent>("onVolumeChange", listener);
+}
+
+export function addPartialResultListener(
+  listener: (event: PartialResultEvent) => void
+): Subscription {
+  return emitter.addListener<PartialResultEvent>("onPartialResult", listener);
 }

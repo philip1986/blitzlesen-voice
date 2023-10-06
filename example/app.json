@@ -16,7 +16,7 @@
       [
         "../app.plugin.js",
         {
-          "speechRecognitionPermission": "????",
+          "speechRecognitionPermission": "speech ????",
           "microphonePermission": "mic ???"
         }
       ]
