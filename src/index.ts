@@ -26,14 +26,22 @@ export function listenFor(
   text: string,
   alternatives: string[],
   timeout: number = 1000,
-  onDeviceRecognition: boolean = false
+  onDeviceRecognition: boolean = true,
+  mistakeConfig: {
+    mistakeLimit: number;
+    timeLimit: number;
+  } = {
+    mistakeLimit: 1,
+    timeLimit: 0,
+  }
 ): Promise<[Error, VoiceResponse]> {
   return BlitzlesenVoiceModule.listenFor(
     locale,
     text,
     alternatives,
     timeout,
-    onDeviceRecognition
+    onDeviceRecognition,
+    mistakeConfig
   );
 }
 
@@ -57,6 +65,11 @@ export type PartialResultEvent = {
   partialResult: WordResult[];
 }
 
+export type MistakeEvent = {
+  word: string;
+  reason: "timeout" | "tooManyMistakes";
+}
+
 export function addVolumeListener(
   listener: (event: VolumeChangeEvent) => void
 ): Subscription {
@@ -68,3 +81,11 @@ export function addPartialResultListener(
 ): Subscription {
   return emitter.addListener<PartialResultEvent>("onPartialResult", listener);
 }
+
+export function addMistakeListner(
+  listener: (event: MistakeEvent) => void
+): Subscription {
+  return emitter.addListener<MistakeEvent>("onMistake", listener);
+}
+
+

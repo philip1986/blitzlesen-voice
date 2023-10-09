@@ -24,18 +24,20 @@ public class BlitzlesenVoiceModule: Module {
 
     Events("onVolumeChange")
     Events("onPartialResult")
+    Events("onMistake")
 
     AsyncFunction("listenFor") {
       (
         locale: String, target: String, alternatives: [String], timeout: Int,
-        onDeviceRecognition: Bool, promise: Promise
+        onDeviceRecognition: Bool, mistakeConfig: [String: Int], promise: Promise
       ) in
+
       voice?.stopRecording()
       voice = Voice(locale: locale, sendEvent: sendEvent)
 
       try voice?.startRecording(
         target: target, alternatives: alternatives, timeout: timeout,
-        onDeviceRecognition: onDeviceRecognition
+        onDeviceRecognition: onDeviceRecognition, mistakeConfig: mistakeConfig
       ) { error, isCorrect, recognisedText, words in
         promise.resolve([
           ListenForError(error: Field(wrappedValue: error?.localizedDescription)),
@@ -110,6 +112,7 @@ public class Voice {
 
   func startRecording(
     target: String, alternatives: [String], timeout: Int, onDeviceRecognition: Bool,
+    mistakeConfig: [String: Int],
     completion: @escaping (Error?, Bool?, String?, [[String: Any]]?) -> Void
   ) throws {
     print("start recording ...")
@@ -120,6 +123,9 @@ public class Voice {
     var res: [[String: Any]] = target.split(separator: " ").map {
       ["word": String($0), "duration": 0, "isCorrect": false]
     }
+    var part = StringAccumulator()
+    var mistakeCount = 0
+    var mistakeTimeout: Timer?
 
     if Voice.hasPermissions == false {
       return completion(NSError(domain: "No permissions", code: 0, userInfo: nil), nil, nil, nil)
@@ -167,6 +173,7 @@ public class Voice {
 
     speechRecognizer?.queue.qualityOfService = .userInteractive
 
+    print("start recognition")
     recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
       if isComplete { return }
       if error != nil {
@@ -181,6 +188,7 @@ public class Voice {
         return
       }
 
+      mistakeTimeout?.invalidate()
       self.timeout?.invalidate()
       if let transcription = result?.bestTranscription {
         self.timeout = Timer.scheduledTimer(
@@ -196,21 +204,30 @@ public class Voice {
           }
         }
 
-        Utils.commonWords(in: target, containedIn: transcription.formattedString)
-          .split(separator: " ")
+        part.add(result?.bestTranscription.formattedString ?? "")
+
+        var wordsAdded = 0
+        Utils.commonWords(in: target, containedIn: part.getAccumulatedString())
+          .split(separator: " ").map { String($0) }
           .enumerated().forEach { (i, el) in
             if (res[i]["isCorrect"] as? Bool) == false {
               let now = CACurrentMediaTime()
               res[i]["isCorrect"] = true
               res[i]["duration"] = Int((now - (start ?? now - 1)) * 1000)
               start = now
+              wordsAdded += 1
             }
           }
 
-        self.sendEvent("onPartialResult", ["partialResult": res])
+        if wordsAdded > 0 {
+          self.sendEvent("onPartialResult", ["partialResult": res])
+          mistakeCount = 0
+        } else {
+          mistakeCount += 1
+        }
 
         if self.isTarget(
-          text: transcription.formattedString, target: target, alternatives: alternatives)
+          text: part.getAccumulatedString(), target: target, alternatives: alternatives)
         {
           self.timeout?.invalidate()
           self.stopRecording()
@@ -218,6 +235,24 @@ public class Voice {
           if !isComplete {
             isComplete = true
             completion(nil, true, transcription.formattedString, res)
+          }
+        } else {
+          if mistakeCount >= mistakeConfig["mistakeLimit"]! {
+            mistakeCount = 0
+            let word = res.first(where: { $0["isCorrect"] as! Bool == false })?["word"] as! String
+            self.sendEvent("onMistake", ["word": word, "reason": "tooManyMistakes"])
+          } else {
+
+            if mistakeConfig["timeLimit"] ?? 0 > 0 && mistakeTimeout?.isValid != true {
+              mistakeTimeout = Timer.scheduledTimer(
+                withTimeInterval: Double(mistakeConfig["timeLimit"] ?? 1000) / 1000, repeats: false
+              ) { _ in
+                let word =
+                  res.first(where: { $0["isCorrect"] as! Bool == false })?["word"] as! String
+                self.sendEvent("onMistake", ["word": word, "reason": "timeout"])
+                mistakeCount = 0
+              }
+            }
           }
         }
       }
@@ -291,5 +326,46 @@ class Utils {
     }
 
     return round(1000 * Float(magnitude) / Float(arraySize))
+  }
+}
+
+class StringAccumulator {
+  private var accumulatedString: String = ""
+
+  func add(_ newPart: String?) {
+    guard let validNewPart = newPart, !validNewPart.isEmpty else {
+      return
+    }
+
+    if accumulatedString.isEmpty {
+      accumulatedString = validNewPart
+      return
+    }
+
+    let accumulatedParts = accumulatedString.split(separator: " ")
+    let newParts = validNewPart.split(separator: " ")
+
+    // Identify common overlapping words and establish the point of difference
+    var commonPrefixCount = 0
+    for (accumulated, new) in zip(accumulatedParts, newParts) {
+      if accumulated == new {
+        commonPrefixCount += 1
+      } else {
+        break
+      }
+    }
+
+    // Add the non-overlapping new part
+    let newSuffix = newParts.dropFirst(commonPrefixCount).joined(separator: " ")
+    accumulatedString += " " + newSuffix
+    accumulatedString = accumulatedString.replacingOccurrences(of: "  ", with: " ")
+  }
+
+  func getAccumulatedString() -> String {
+    return accumulatedString
+  }
+
+  private func cleanUpSpaces(in string: String) -> String {
+    return string.replacingOccurrences(of: " +", with: " ", options: .regularExpression)
   }
 }

@@ -22,6 +22,13 @@ export default function App() {
     "test"
   ];
 
+  // const phrases = [
+  //   "das",
+  //   "ist",
+  //   "ein",
+  //   "test"
+  // ];
+
   const [counter, setCounter] = useState(0);
   const [text, setText] = useState(toWords(phrases[counter]));
 
@@ -48,7 +55,19 @@ export default function App() {
   useEffect(() => {
     const subscription = BlitzlesenVoice.addPartialResultListener(
       ({partialResult} ) => { 
+        // console.log('partialResult', partialResult);
+        
         setText(partialResult);
+      }
+    );
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    const subscription = BlitzlesenVoice.addMistakeListner(
+      ({word, reason}) => { 
+        console.log('mistake', word, reason);
       }
     );
 
@@ -70,7 +89,11 @@ export default function App() {
         text.map((w) => w.word).join(" "),
         ["it's ok"],
         20000,
-        false
+        true,
+        {
+          mistakeLimit: 3,
+          timeLimit: 3000,
+        }
       );
 
       console.log('>>>>>', res);
