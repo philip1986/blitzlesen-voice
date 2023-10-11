@@ -16,6 +16,13 @@ struct ListenForError: Record {
   var error: String?
 }
 
+extension Optional {
+    func `let`(_ do: (Wrapped)->()) {
+        guard let v = self else { return }
+        `do`(v)
+    }
+}
+
 public class BlitzlesenVoiceModule: Module {
   private var voice: Voice?
 
@@ -121,7 +128,7 @@ public class Voice {
     var isComplete = false
     var start: CFTimeInterval?
     var res: [[String: Any]] = target.split(separator: " ").map {
-      ["word": String($0), "duration": 0, "isCorrect": false]
+      ["word": String($0), "duration": 0, "isCorrect": false, "mistake": false]
     }
     var part = StringAccumulator()
     var mistakeCount = 0
@@ -239,8 +246,12 @@ public class Voice {
         } else {
           if mistakeCount >= mistakeConfig["mistakeLimit"]! {
             mistakeCount = 0
-            let word = res.first(where: { $0["isCorrect"] as! Bool == false })?["word"] as! String
-            self.sendEvent("onMistake", ["word": word, "reason": "tooManyMistakes"])
+              res.firstIndex(where: { $0["isCorrect"] as! Bool == false }).let { i in
+                res[i]["mistake"] = true
+                  self.sendEvent("onMistake", ["word": res[i]["word"] as! String, "reason": "tooManyMistakes"])
+              }
+              
+            
           } else {
 
             if mistakeConfig["timeLimit"] ?? 0 > 0 && mistakeTimeout?.isValid != true {

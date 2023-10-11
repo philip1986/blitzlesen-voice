@@ -7,6 +7,7 @@ export type WordResult = {
   word: string;
   isCorrect: boolean;
   duration: number;
+  mistake: boolean;
 };
 
 export type VoiceResponse = {
