@@ -3,7 +3,7 @@
 import { EventEmitter, Subscription } from "expo-modules-core";
 import BlitzlesenVoiceModule from "./BlitzlesenVoiceModule";
 
-type WordResult = {
+export type WordResult = {
   word: string;
   isCorrect: boolean;
   duration: number;
@@ -61,14 +61,14 @@ export type VolumeChangeEvent = {
   volume: number;
 };
 
-export type PartialResultEvent = { 
+export type PartialResultEvent = {
   partialResult: WordResult[];
-}
+};
 
 export type MistakeEvent = {
   word: string;
   reason: "timeout" | "tooManyMistakes";
-}
+};
 
 export function addVolumeListener(
   listener: (event: VolumeChangeEvent) => void
@@ -87,5 +87,3 @@ export function addMistakeListner(
 ): Subscription {
   return emitter.addListener<MistakeEvent>("onMistake", listener);
 }
-
-
