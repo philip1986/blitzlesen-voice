@@ -156,8 +156,9 @@ public class Voice {
       (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
       DispatchQueue.global(qos: .background).async {
         let volume = Utils.getVolumeLevel(buffer: buffer)
-        if start == nil && volume > 10 {
-          start = CACurrentMediaTime()
+        if start == nil && volume > 1 {
+            start = CACurrentMediaTime()
+        
         }
         self.sendEvent("onVolumeChange", ["volume": volume])
       }
@@ -220,7 +221,7 @@ public class Voice {
             if (res[i]["isCorrect"] as? Bool) == false {
               let now = CACurrentMediaTime()
               res[i]["isCorrect"] = true
-              res[i]["duration"] = Int((now - (start ?? now - 1)) * 1000)
+              res[i]["duration"] = Int((now - (start ?? now - 99)) * 1000)
               start = now
               wordsAdded += 1
             }
