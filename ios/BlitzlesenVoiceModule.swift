@@ -302,7 +302,7 @@ class Utils {
 
     for word1 in words1 {
       while let word2 = iterator2.next() {
-        if word1 == word2 {
+          if word2.contains(word1) {
           currentWords.append(String(word1))
           break
         } else if !currentWords.isEmpty {
