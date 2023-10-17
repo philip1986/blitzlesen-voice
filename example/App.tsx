@@ -19,7 +19,7 @@ export default function App() {
   const phrases = [
     "Auf dem Tisch lag eine schwarze Katze",
     "Sie war sehr müde",
-    "test"
+    "test",
   ];
 
   // const phrases = [
@@ -54,9 +54,9 @@ export default function App() {
 
   useEffect(() => {
     const subscription = BlitzlesenVoice.addPartialResultListener(
-      ({partialResult} ) => { 
+      ({ partialResult }) => {
         // console.log('partialResult', partialResult);
-        
+
         setText(partialResult);
       }
     );
@@ -65,9 +65,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const subscription = BlitzlesenVoice.addDebugListner(
+      ({ recognisedText }) => {
+        console.log("recognisedText", recognisedText);
+      }
+    );
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
     const subscription = BlitzlesenVoice.addMistakeListner(
-      ({word, reason}) => { 
-        console.log('mistake', word, reason);
+      ({ word, reason }) => {
+        console.log("mistake", word, reason);
       }
     );
 
@@ -96,7 +106,7 @@ export default function App() {
         }
       );
 
-      console.log('>>>>>', res);
+      console.log(">>>>>", res);
 
       setIsCorrect(res.isCorrect);
       if (!res.isCorrect) {

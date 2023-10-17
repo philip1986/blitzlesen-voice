@@ -32,6 +32,7 @@ public class BlitzlesenVoiceModule: Module {
     Events("onVolumeChange")
     Events("onPartialResult")
     Events("onMistake")
+    Events("onDebug")
 
     AsyncFunction("listenFor") {
       (
@@ -199,6 +200,7 @@ public class Voice {
       mistakeTimeout?.invalidate()
       self.timeout?.invalidate()
       if let transcription = result?.bestTranscription {
+        self.sendEvent("onDebug", ["recognisedText": transcription.formattedString])
         self.timeout = Timer.scheduledTimer(
           withTimeInterval: Double(timeout) / 1000, repeats: false
         ) { _ in

@@ -71,6 +71,10 @@ export type MistakeEvent = {
   reason: "timeout" | "tooManyMistakes";
 };
 
+export type DebugEvent = {
+  recognisedText: string;
+};
+
 export function addVolumeListener(
   listener: (event: VolumeChangeEvent) => void
 ): Subscription {
@@ -87,4 +91,10 @@ export function addMistakeListner(
   listener: (event: MistakeEvent) => void
 ): Subscription {
   return emitter.addListener<MistakeEvent>("onMistake", listener);
+}
+
+export function addDebugListner(
+  listener: (event: DebugEvent) => void
+): Subscription {
+  return emitter.addListener<DebugEvent>("onDebug", listener);
 }
