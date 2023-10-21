@@ -24,8 +24,7 @@ const emitter = new EventEmitter(BlitzlesenVoiceModule);
 
 export function listenFor(
   locale: string,
-  text: string,
-  alternatives: string[],
+  target: string[][],
   timeout: number = 1000,
   onDeviceRecognition: boolean = true,
   mistakeConfig: {
@@ -38,8 +37,7 @@ export function listenFor(
 ): Promise<[Error, VoiceResponse]> {
   return BlitzlesenVoiceModule.listenFor(
     locale,
-    text,
-    alternatives,
+    target,
     timeout,
     onDeviceRecognition,
     mistakeConfig

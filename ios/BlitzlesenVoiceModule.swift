@@ -36,15 +36,17 @@ public class BlitzlesenVoiceModule: Module {
 
     AsyncFunction("listenFor") {
       (
-        locale: String, target: String, alternatives: [String], timeout: Int,
+        locale: String, target: [[String]], timeout: Int,
         onDeviceRecognition: Bool, mistakeConfig: [String: Int], promise: Promise
       ) in
+        
+        print(target)
 
       voice?.stopRecording()
       voice = Voice(locale: locale, sendEvent: sendEvent)
 
       try voice?.startRecording(
-        target: target, alternatives: alternatives, timeout: timeout,
+        target: target, timeout: timeout,
         onDeviceRecognition: onDeviceRecognition, mistakeConfig: mistakeConfig
       ) { error, isCorrect, recognisedText, words in
         promise.resolve([
@@ -119,7 +121,7 @@ public class Voice {
   }
 
   func startRecording(
-    target: String, alternatives: [String], timeout: Int, onDeviceRecognition: Bool,
+    target: [[String]], timeout: Int, onDeviceRecognition: Bool,
     mistakeConfig: [String: Int],
     completion: @escaping (Error?, Bool?, String?, [[String: Any]]?) -> Void
   ) throws {
@@ -128,8 +130,8 @@ public class Voice {
 
     var isComplete = false
     var start: CFTimeInterval?
-    var res: [[String: Any]] = target.split(separator: " ").map {
-      ["word": String($0), "duration": 0, "isCorrect": false, "mistake": false]
+    var res: [[String: Any]] = target.map {
+        ["word": $0.first!, "duration": 0, "isCorrect": false, "mistake": false]
     }
     var part = StringAccumulator()
     var mistakeCount = 0
@@ -237,7 +239,7 @@ public class Voice {
         }
 
         if self.isTarget(
-          text: part.getAccumulatedString(), target: target, alternatives: alternatives)
+          text: part.getAccumulatedString(), target: target)
         {
           self.timeout?.invalidate()
           self.stopRecording()
@@ -274,10 +276,8 @@ public class Voice {
     self.sendEvent("onPartialResult", ["partialResult": res])
   }
 
-  func isTarget(text: String, target: String, alternatives: [String]) -> Bool {
-    let targets = [target] + alternatives
-    return targets.contains(where: { text.lowercased().contains($0.lowercased()) })
-      || Utils.commonWords(in: target, containedIn: text) == target.lowercased()
+  func isTarget(text: String, target: [[String]]) -> Bool {
+      return Utils.commonWords(in: target, containedIn: text) == target.map { $0.first?.lowercased() ?? "" }.joined(separator: " ")
   }
 
   func stopRecording() {
@@ -295,8 +295,8 @@ public class Voice {
 }
 
 class Utils {
-  public static func commonWords(in string1: String, containedIn string2: String) -> String {
-    let words1 = string1.lowercased().split(separator: " ")
+    public static func commonWords(in string1: [[String]], containedIn string2: String) -> String {
+    let words1 = string1.map { $0.map { $0.lowercased()} }
     let words2 = string2.lowercased().split(separator: " ")
 
     var commonWords: [String] = []
@@ -305,8 +305,8 @@ class Utils {
 
     for word1 in words1 {
       while let word2 = iterator2.next() {
-          if word2.contains(word1) {
-          currentWords.append(String(word1))
+          if word1.contains(where: { word2.contains($0)}) {
+              currentWords.append(word1.first ?? "")
           break
         } else if !currentWords.isEmpty {
           commonWords.append(currentWords.joined(separator: " "))

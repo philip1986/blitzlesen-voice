@@ -5,21 +5,30 @@ import { useEffect, useState } from "react";
 
 interface Word {
   word: string;
+  targets: string[];
   isCorrect: boolean;
 }
 
-function toWords(text: string): Word[] {
-  return text.split(" ").map((w) => ({
-    word: w,
+function toWords(text: string[][]): Word[] {
+  return text.map((w) => ({
+    word: w[0],
+    targets: w,
     isCorrect: false,
   }));
 }
 
 export default function App() {
   const phrases = [
-    "Auf dem Tisch lag eine schwarze Katze",
-    "Sie war sehr müde",
-    "test",
+    [
+      ["Auf", "ich"],
+      ["dem", "bin"],
+      ["Tisch", "da"],
+      ["lag"],
+      ["eine"],
+      ["schwarze"],
+      ["Katze"],
+    ],
+    [["Sie"], ["war"], ["sehr"], ["müde"]],
   ];
 
   // const phrases = [
@@ -55,9 +64,12 @@ export default function App() {
   useEffect(() => {
     const subscription = BlitzlesenVoice.addPartialResultListener(
       ({ partialResult }) => {
-        // console.log('partialResult', partialResult);
-
-        setText(partialResult);
+        setText((p) =>
+          partialResult.map((w, i) => ({
+            ...w,
+            targets: p[i].targets,
+          }))
+        );
       }
     );
 
@@ -96,8 +108,7 @@ export default function App() {
 
       const [err, res] = await BlitzlesenVoice.listenFor(
         "de-DE",
-        text.map((w) => w.word).join(" "),
-        ["it's ok"],
+        text.map((w) => w.targets),
         20000,
         true,
         {
