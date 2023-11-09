@@ -39,8 +39,6 @@ public class BlitzlesenVoiceModule: Module {
         locale: String, target: [[String]], timeout: Int,
         onDeviceRecognition: Bool, mistakeConfig: [String: Int], promise: Promise
       ) in
-        
-        print(target)
 
       voice?.stopRecording()
       voice = Voice(locale: locale, sendEvent: sendEvent)
@@ -282,7 +280,7 @@ public class Voice {
 
   func stopRecording() {
     print("stop recording ...")
-    recognitionTask?.finish()
+    recognitionTask?.cancel()
 
     audioEngine.stop()
     inputNode?.removeTap(onBus: 0)
