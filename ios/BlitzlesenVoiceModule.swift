@@ -39,22 +39,26 @@ public class BlitzlesenVoiceModule: Module {
         locale: String, target: [[String]], timeout: Int,
         onDeviceRecognition: Bool, mistakeConfig: [String: Int], promise: Promise
       ) in
+        
+        voice?.stopRecording()
 
-      voice?.stopRecording()
-      voice = Voice(locale: locale, sendEvent: sendEvent)
-
-      try voice?.startRecording(
-        target: target, timeout: timeout,
-        onDeviceRecognition: onDeviceRecognition, mistakeConfig: mistakeConfig
-      ) { error, isCorrect, recognisedText, words in
-        promise.resolve([
-          ListenForError(error: Field(wrappedValue: error?.localizedDescription)),
-          ListenForResponse(
-            isCorrect: Field(wrappedValue: isCorrect),
-            recognisedText: Field(wrappedValue: recognisedText),
-            words: Field(wrappedValue: words)),
-        ])
-      }
+        if(voice == nil || voice?.locale != locale ) {
+          voice = Voice(locale: locale, sendEvent: sendEvent)
+        
+        }
+        try voice?.startRecording(
+            target: target, timeout: timeout,
+            onDeviceRecognition: onDeviceRecognition, mistakeConfig: mistakeConfig
+        ) { error, isCorrect, recognisedText, words in
+            promise.resolve([
+                ListenForError(error: Field(wrappedValue: error?.localizedDescription)),
+                ListenForResponse(
+                    isCorrect: Field(wrappedValue: isCorrect),
+                    recognisedText: Field(wrappedValue: recognisedText),
+                    words: Field(wrappedValue: words)),
+            ])
+        }
+        
     }
 
     Function("isListening") { () in
@@ -83,20 +87,22 @@ public class BlitzlesenVoiceModule: Module {
 
 public class Voice {
   static var hasPermissions = false
+  var locale: String
   private var recognitionTask: SFSpeechRecognitionTask?
   private var timeout: Timer?
   private var speechRecognizer: SFSpeechRecognizer?
-  private let audioEngine = AVAudioEngine()
   private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
   private var inputNode: AVAudioInputNode!
   private var sendEvent: (String, [String: Any]) -> Void = { _, _ in }
-  private var audioSession = AVAudioSession.sharedInstance()
+  private let audioEngine = AVAudioEngine()
+  private let audioSession = AVAudioSession.sharedInstance()
 
   init(locale: String, sendEvent: @escaping (String, [String: Any]) -> Void) {
     if Voice.hasPermissions == false { Voice.getPermissions { _ in } }
     self.sendEvent = sendEvent
 
     print("init voice \(locale)")
+    self.locale = locale
     speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: locale))
   }
 
@@ -145,31 +151,34 @@ public class Voice {
         NSError(domain: "Speech recognion is not supported!", code: 0, userInfo: nil), nil, nil, nil
       )
     }
-
     
     try audioSession.setCategory(.record, mode: .measurement, options: .mixWithOthers)
     try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
     inputNode = audioEngine.inputNode
     inputNode?.removeTap(onBus: 0)
-
-    let recordingFormat = inputNode?.outputFormat(forBus: 0)
-    inputNode?.installTap(onBus: 0, bufferSize: 512, format: recordingFormat) {
-      (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
-      DispatchQueue.global(qos: .background).async {
-        let volume = Utils.getVolumeLevel(buffer: buffer)
-        if start == nil && volume > 1 {
-            start = CACurrentMediaTime()
-        
-        }
-        self.sendEvent("onVolumeChange", ["volume": volume])
-      }
-      self.recognitionRequest?.append(buffer)
+    
+    let recordingFormat = inputNode?.inputFormat(forBus: 0)
+    if(recordingFormat?.channelCount == 0) {
+        return completion(NSError(domain: "", code: 500, userInfo: ["msg": "Audio device busy!"]), nil, nil, nil)
     }
-
+    
+    try inputNode?.installTap(onBus: 0, bufferSize: 512, format: recordingFormat) {
+        (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
+        DispatchQueue.global(qos: .background).async {
+            let volume = Utils.getVolumeLevel(buffer: buffer)
+            if start == nil && volume > 1 {
+                start = CACurrentMediaTime()
+                
+            }
+            self.sendEvent("onVolumeChange", ["volume": volume])
+        }
+        self.recognitionRequest?.append(buffer)
+    }
+    
     audioEngine.prepare()
     try audioEngine.start()
-
+      
     recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
     guard let recognitionRequest = recognitionRequest else {
       fatalError("Unable to create a SFSpeechAudioBufferRecognitionRequest object")
@@ -281,12 +290,13 @@ public class Voice {
 
   func stopRecording() {
     print("stop recording ...")
-    recognitionTask?.finish()
+    recognitionTask?.cancel()
       
     audioEngine.stop()
     inputNode?.removeTap(onBus: 0)
     Thread.sleep(forTimeInterval: 0.1)
       var sessionSet = false
+      var c = 0
       while (sessionSet == false) {
           do {
               try audioSession.setCategory(.playback, mode: .voicePrompt, options: .mixWithOthers)
@@ -294,6 +304,10 @@ public class Voice {
           } catch let e {
               print(e)
               Thread.sleep(forTimeInterval: 0.1)
+              c += 1
+              if(c > 10) {
+                  sessionSet = true
+              }
           }
       }
 
