@@ -90,6 +90,7 @@ public class Voice {
   private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
   private var inputNode: AVAudioInputNode!
   private var sendEvent: (String, [String: Any]) -> Void = { _, _ in }
+  private var audioSession = AVAudioSession.sharedInstance()
 
   init(locale: String, sendEvent: @escaping (String, [String: Any]) -> Void) {
     if Voice.hasPermissions == false { Voice.getPermissions { _ in } }
@@ -145,8 +146,8 @@ public class Voice {
       )
     }
 
-    let audioSession = AVAudioSession.sharedInstance()
-    try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+    
+    try audioSession.setCategory(.record, mode: .measurement, options: .mixWithOthers)
     try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
     inputNode = audioEngine.inputNode
@@ -280,11 +281,21 @@ public class Voice {
 
   func stopRecording() {
     print("stop recording ...")
-    recognitionTask?.cancel()
-
+    recognitionTask?.finish()
+      
     audioEngine.stop()
     inputNode?.removeTap(onBus: 0)
     Thread.sleep(forTimeInterval: 0.1)
+      var sessionSet = false
+      while (sessionSet == false) {
+          do {
+              try audioSession.setCategory(.playback, mode: .voicePrompt, options: .mixWithOthers)
+              sessionSet = true
+          } catch let e {
+              print(e)
+              Thread.sleep(forTimeInterval: 0.1)
+          }
+      }
 
     recognitionRequest?.endAudio()
     recognitionRequest = nil
