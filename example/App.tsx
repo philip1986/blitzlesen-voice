@@ -19,16 +19,8 @@ function toWords(text: string[][]): Word[] {
 
 export default function App() {
   const phrases = [
-    [
-      ["Auf", "ich"],
-      ["dem", "bin"],
-      ["Tisch", "da"],
-      ["lag"],
-      ["eine"],
-      ["schwarze"],
-      ["Katze"],
-    ],
-    [["Sie"], ["war"], ["sehr"], ["müde"]],
+    [["Du"], ["winkst"], ["Oma"]],
+    [["Die"], ["Kuh"]],
   ];
 
   // const phrases = [
@@ -106,8 +98,20 @@ export default function App() {
         return;
       }
 
+      try {
+        const s = Date.now();
+        await BlitzlesenVoice.train(
+          "de_DE",
+          ["Du winkst Oma"],
+          [["Kuh", "k uː"]]
+        );
+        console.log("Training took", Date.now() - s, "ms");
+      } catch (e) {
+        console.log(e);
+      }
+
       const [err, res] = await BlitzlesenVoice.listenFor(
-        "de-DE",
+        "de_DE",
         text.map((w) => w.targets),
         20000,
         true,

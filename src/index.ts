@@ -96,3 +96,11 @@ export function addDebugListner(
 ): Subscription {
   return emitter.addListener<DebugEvent>("onDebug", listener);
 }
+
+export function train(
+  locale: string,
+  phrases: string[],
+  graphemeToPhonems: string[][]
+): Promise<void> {
+  return BlitzlesenVoiceModule.train(locale, phrases, graphemeToPhonems);
+}

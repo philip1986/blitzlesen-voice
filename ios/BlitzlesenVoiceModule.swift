@@ -44,8 +44,8 @@ public class BlitzlesenVoiceModule: Module {
 
         if(voice == nil || voice?.locale != locale ) {
           voice = Voice(locale: locale, sendEvent: sendEvent)
-        
         }
+        
         try voice?.startRecording(
             target: target, timeout: timeout,
             onDeviceRecognition: onDeviceRecognition, mistakeConfig: mistakeConfig
@@ -60,6 +60,22 @@ public class BlitzlesenVoiceModule: Module {
         }
         
     }
+      
+      AsyncFunction("train") { (locale: String, phrases: [String], graphemeToPhonems: [[String]], promise: Promise) in
+          if #available(iOS 17, *) {
+              if(voice == nil) {
+                voice = Voice(locale: locale, sendEvent: sendEvent)
+              }
+              Task.detached {
+                  await self.voice?.train(locale: locale, phrases: phrases, graphemeToPhonems: graphemeToPhonems)
+                promise.resolve()
+              }
+          } else {
+              promise.resolve()
+          }
+          
+          
+      }
 
     Function("isListening") { () in
       voice?.isListening()
@@ -97,6 +113,14 @@ public class Voice {
   private let audioEngine = AVAudioEngine()
   private let audioSession = AVAudioSession.sharedInstance()
 
+    @available(iOS 17, *)
+    private var lmConfiguration: SFSpeechLanguageModel.Configuration {
+        let outputDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        let dynamicLanguageModel = outputDir.appendingPathComponent("LM")
+        let dynamicVocabulary = outputDir.appendingPathComponent("Vocab")
+        return SFSpeechLanguageModel.Configuration(languageModel: dynamicLanguageModel, vocabulary: dynamicVocabulary)
+    }
+
   init(locale: String, sendEvent: @escaping (String, [String: Any]) -> Void) {
     if Voice.hasPermissions == false { Voice.getPermissions { _ in } }
     self.sendEvent = sendEvent
@@ -124,6 +148,32 @@ public class Voice {
       }
     }
   }
+    
+    func train(locale: String, phrases: [String], graphemeToPhonems: [[String]]) async -> Void {
+        if #available(iOS 17, *) {
+            do {
+                let data = SFCustomLanguageModelData(locale: Locale(identifier: locale), identifier: "com.philip1986.dragonreading", version: "1.0")
+                
+                phrases.forEach { phrase in
+                    data.insert(phraseCount: SFCustomLanguageModelData.PhraseCount(phrase: phrase, count: 1000))
+                }
+                
+                graphemeToPhonems.forEach { mapping in
+                    data.insert(term: SFCustomLanguageModelData.CustomPronunciation(grapheme: mapping[0], phonemes: [mapping[1]]))
+                }
+                
+                let fileName = "custom.bin"
+                let docDirURL = try! FileManager.default.url(for: .cachesDirectory, in: .allDomainsMask, appropriateFor: nil, create: true)
+                let path = docDirURL.appendingPathComponent(fileName)
+                try await data.export(to: path)
+            
+                try await SFSpeechLanguageModel.prepareCustomLanguageModel(for: path, clientIdentifier: "com.philip1986.dragonreading", configuration: self.lmConfiguration)
+                return
+            } catch {
+                return
+            }
+        }
+    }
 
   func startRecording(
     target: [[String]], timeout: Int, onDeviceRecognition: Bool,
@@ -189,6 +239,10 @@ public class Voice {
 
     recognitionRequest.requiresOnDeviceRecognition =
       onDeviceRecognition == true && speechRecognizer?.supportsOnDeviceRecognition == true
+      
+      if #available(iOS 17, *) {
+          recognitionRequest.customizedLanguageModel = self.lmConfiguration
+      }
 
     speechRecognizer?.queue.qualityOfService = .userInteractive
 
