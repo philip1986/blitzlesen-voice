@@ -274,7 +274,7 @@ public class Voice {
 
           if !isComplete {
             isComplete = true
-            completion(NSError(domain: "Timeout", code: 0, userInfo: "Timeout"), false, transcription.formattedString, res)
+            completion(NSError(domain: "Timeout", code: 0, userInfo: ["msg": "Timeout"]), false, transcription.formattedString, res)
           }
         }
 
