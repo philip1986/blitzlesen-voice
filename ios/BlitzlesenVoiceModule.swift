@@ -274,7 +274,7 @@ public class Voice {
 
           if !isComplete {
             isComplete = true
-            completion(NSError(domain: "Timeout", code: 0, userInfo: nil), false, transcription.formattedString, res)
+            completion(NSError(domain: "Timeout", code: 0, userInfo: "Timeout"), false, transcription.formattedString, res)
           }
         }
 
@@ -345,6 +345,7 @@ public class Voice {
   func stopRecording() {
     print("stop recording ...")
     recognitionTask?.cancel()
+    timeout?.invalidate()
       
     audioEngine.stop()
     inputNode?.removeTap(onBus: 0)
