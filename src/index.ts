@@ -33,14 +33,16 @@ export function listenFor(
   } = {
     mistakeLimit: 1,
     timeLimit: 0,
-  }
+  },
+  firstItemDurationOffset: number = 0
 ): Promise<[Error, VoiceResponse]> {
   return BlitzlesenVoiceModule.listenFor(
     locale,
     target,
     timeout,
     onDeviceRecognition,
-    mistakeConfig
+    mistakeConfig,
+    firstItemDurationOffset
   );
 }
 
