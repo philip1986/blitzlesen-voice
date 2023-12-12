@@ -228,10 +228,11 @@ public class Voice {
     var res: [[String: Any]] = target.map {
       ["word": $0.first!, "duration": 0, "isCorrect": false, "mistake": false]
     }
-    var part = StringAccumulator()
+    let part = StringAccumulator()
     var mistakeCount = 0
     var mistakeTimeout: Timer?
     var firstItemDurationOffsetApplied = false
+    var prevtranscription = ""
 
     if Voice.hasPermissions == false {
       return completion(NSError(domain: "No permissions", code: 0, userInfo: nil), nil, nil, nil)
@@ -303,14 +304,17 @@ public class Voice {
         return
       }
 
-      mistakeTimeout?.invalidate()
-      self.timeout?.invalidate()
       if let transcription = result?.bestTranscription {
+        if prevtranscription == transcription.formattedString {
+          return
+        }
+        prevtranscription = transcription.formattedString
+        mistakeTimeout?.invalidate()
+        self.timeout?.invalidate()
         self.sendEvent("onDebug", ["recognisedText": transcription.formattedString])
         self.timeout = Timer.scheduledTimer(
           withTimeInterval: Double(timeout) / 1000, repeats: false
         ) { _ in
-          print("stop")
           self.timeout?.invalidate()
           self.stopRecording()
 
@@ -343,21 +347,25 @@ public class Voice {
         if wordsAdded > 0 {
           self.sendEvent("onPartialResult", ["partialResult": res])
           mistakeCount = 0
-        } else {
-          mistakeCount += 1
+
+          if self.isTarget(
+            text: part.getAccumulatedString(), target: target)
+          {
+            self.timeout?.invalidate()
+            self.stopRecording()
+
+            if !isComplete {
+              isComplete = true
+              completion(nil, true, transcription.formattedString, res)
+            }
+          }
+          return
         }
 
-        if self.isTarget(
-          text: part.getAccumulatedString(), target: target)
-        {
-          self.timeout?.invalidate()
-          self.stopRecording()
+        mistakeTimeout = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { _ in
+          print("test", transcription.formattedString)
+          mistakeCount += 1
 
-          if !isComplete {
-            isComplete = true
-            completion(nil, true, transcription.formattedString, res)
-          }
-        } else {
           if mistakeCount >= mistakeConfig["mistakeLimit"]! {
             mistakeCount = 0
             res.firstIndex(where: { $0["isCorrect"] as! Bool == false }).let { i in
@@ -365,24 +373,11 @@ public class Voice {
               self.sendEvent(
                 "onMistake", ["word": res[i]["word"] as! String, "reason": "tooManyMistakes"])
             }
-
-          } else {
-
-            if mistakeConfig["timeLimit"] ?? 0 > 0 && mistakeTimeout?.isValid != true {
-              mistakeTimeout = Timer.scheduledTimer(
-                withTimeInterval: Double(mistakeConfig["timeLimit"] ?? 1000) / 1000, repeats: false
-              ) { _ in
-                let word =
-                  res.first(where: { $0["isCorrect"] as! Bool == false })?["word"] as! String
-                self.sendEvent("onMistake", ["word": word, "reason": "timeout"])
-                mistakeCount = 0
-              }
-            }
           }
         }
+
       }
     }
-    self.sendEvent("onPartialResult", ["partialResult": res])
   }
 
   func isTarget(text: String, target: [[String]]) -> Bool {
@@ -503,6 +498,10 @@ class StringAccumulator {
 
   func getAccumulatedString() -> String {
     return accumulatedString
+  }
+
+  func getLastWord() -> String {
+    return accumulatedString.components(separatedBy: " ").last?.lowercased() ?? ""
   }
 
   private func cleanUpSpaces(in string: String) -> String {

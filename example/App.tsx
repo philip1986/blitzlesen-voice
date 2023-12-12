@@ -19,6 +19,7 @@ function toWords(text: string[][]): Word[] {
 
 export default function App() {
   const phrases = [
+    [["lebendig"]],
     [["Du"], ["winkst"], ["Oma"]],
     [["Die"], ["Kuh"]],
   ];
@@ -71,7 +72,7 @@ export default function App() {
   useEffect(() => {
     const subscription = BlitzlesenVoice.addDebugListner(
       ({ recognisedText }) => {
-        console.log("recognisedText", recognisedText);
+        console.log("[debug] recognisedText", recognisedText);
       }
     );
 
@@ -81,7 +82,7 @@ export default function App() {
   useEffect(() => {
     const subscription = BlitzlesenVoice.addMistakeListner(
       ({ word, reason }) => {
-        console.log("mistake", word, reason);
+        console.log("[debug] mistake", word, reason);
       }
     );
 
@@ -103,7 +104,7 @@ export default function App() {
         await BlitzlesenVoice.train(
           "de_DE",
           ["Du winkst Oma"],
-          [["Kuh", "k uː"]]
+          [["Kuh", "k u:"]]
         );
         console.log("Training took", Date.now() - s, "ms");
       } catch (e) {
@@ -116,8 +117,7 @@ export default function App() {
         20000,
         true,
         {
-          mistakeLimit: 3,
-          timeLimit: 3000,
+          mistakeLimit: 1,
         }
       );
 

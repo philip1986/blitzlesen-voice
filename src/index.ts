@@ -29,10 +29,8 @@ export function listenFor(
   onDeviceRecognition: boolean = true,
   mistakeConfig: {
     mistakeLimit: number;
-    timeLimit: number;
   } = {
     mistakeLimit: 1,
-    timeLimit: 0,
   },
   firstItemDurationOffset: number = 0
 ): Promise<[Error, VoiceResponse]> {
