@@ -38,7 +38,7 @@ public class BlitzlesenVoiceModule: Module {
       (
         locale: String, target: [[String]], timeout: Int,
         onDeviceRecognition: Bool, mistakeConfig: [String: Int], firstItemDurationOffset: Int,
-        volumeThreshold: Int,
+        volumeThreshold: Float,
         promise: Promise
       ) in
 
@@ -219,7 +219,7 @@ public class Voice {
     target: [[String]], timeout: Int, onDeviceRecognition: Bool,
     mistakeConfig: [String: Int],
     firstItemDurationOffset: Int = 0,
-    volumeThreshold: Int,
+    volumeThreshold: Float,
     completion: @escaping (Error?, Bool?, String?, [[String: Any]]?) -> Void
   ) throws {
     print("start recording ...")
