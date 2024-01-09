@@ -32,7 +32,8 @@ export function listenFor(
   } = {
     mistakeLimit: 1,
   },
-  firstItemDurationOffset: number = 0
+  firstItemDurationOffset: number = 0,
+  volumeThreshold: number = 3
 ): Promise<[Error, VoiceResponse]> {
   return BlitzlesenVoiceModule.listenFor(
     locale,
@@ -40,7 +41,8 @@ export function listenFor(
     timeout,
     onDeviceRecognition,
     mistakeConfig,
-    firstItemDurationOffset
+    firstItemDurationOffset,
+    volumeThreshold
   );
 }
 

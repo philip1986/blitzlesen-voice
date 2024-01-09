@@ -38,6 +38,7 @@ public class BlitzlesenVoiceModule: Module {
       (
         locale: String, target: [[String]], timeout: Int,
         onDeviceRecognition: Bool, mistakeConfig: [String: Int], firstItemDurationOffset: Int,
+        volumeThreshold: Int,
         promise: Promise
       ) in
 
@@ -50,7 +51,7 @@ public class BlitzlesenVoiceModule: Module {
       try voice?.startRecording(
         target: target, timeout: timeout,
         onDeviceRecognition: onDeviceRecognition, mistakeConfig: mistakeConfig,
-        firstItemDurationOffset: firstItemDurationOffset
+        firstItemDurationOffset: firstItemDurationOffset, volumeThreshold: volumeThreshold
       ) { error, isCorrect, recognisedText, words in
         promise.resolve([
           ListenForError(error: Field(wrappedValue: error?.localizedDescription)),
@@ -218,6 +219,7 @@ public class Voice {
     target: [[String]], timeout: Int, onDeviceRecognition: Bool,
     mistakeConfig: [String: Int],
     firstItemDurationOffset: Int = 0,
+    volumeThreshold: Int,
     completion: @escaping (Error?, Bool?, String?, [[String: Any]]?) -> Void
   ) throws {
     print("start recording ...")
@@ -260,7 +262,7 @@ public class Voice {
       (buffer: AVAudioPCMBuffer, _: AVAudioTime) in
       DispatchQueue.global(qos: .background).async {
         let volume = Utils.getVolumeLevel(buffer: buffer)
-        if start == nil && volume > 1 {
+        if start == nil && volume > volumeThreshold {
           start = CACurrentMediaTime()
 
         }
