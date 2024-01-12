@@ -53,6 +53,7 @@ public class BlitzlesenVoiceModule: Module {
         onDeviceRecognition: onDeviceRecognition, mistakeConfig: mistakeConfig,
         firstItemDurationOffset: firstItemDurationOffset, volumeThreshold: volumeThreshold
       ) { error, isCorrect, recognisedText, words in
+        print(error)
         promise.resolve([
           ListenForError(error: Field(wrappedValue: error?.localizedDescription)),
           ListenForResponse(
@@ -246,7 +247,8 @@ public class Voice {
       )
     }
 
-    try audioSession.setCategory(.playAndRecord, mode: .voicePrompt, options: .duckOthers)
+    try audioSession.setCategory(
+      .playAndRecord, mode: .default, options: [.allowBluetooth, .defaultToSpeaker])
     try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
     inputNode = audioEngine.inputNode
