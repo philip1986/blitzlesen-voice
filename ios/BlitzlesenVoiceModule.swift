@@ -246,7 +246,7 @@ public class Voice {
       )
     }
 
-    try audioSession.setCategory(.record, mode: .measurement, options: .mixWithOthers)
+    try audioSession.setCategory(.playAndRecord, mode: .voicePrompt, options: .duckOthers)
     try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
 
     inputNode = audioEngine.inputNode
@@ -395,21 +395,6 @@ public class Voice {
     audioEngine.stop()
     inputNode?.removeTap(onBus: 0)
     Thread.sleep(forTimeInterval: 0.1)
-    var sessionSet = false
-    var c = 0
-    while sessionSet == false {
-      do {
-        try audioSession.setCategory(.playback, mode: .voicePrompt, options: .mixWithOthers)
-        sessionSet = true
-      } catch let e {
-        print(e)
-        Thread.sleep(forTimeInterval: 0.1)
-        c += 1
-        if c > 10 {
-          sessionSet = true
-        }
-      }
-    }
 
     recognitionRequest?.endAudio()
     recognitionRequest = nil
