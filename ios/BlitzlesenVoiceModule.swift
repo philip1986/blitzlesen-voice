@@ -248,8 +248,18 @@ public class Voice {
     }
 
     try audioSession.setCategory(
-      .playAndRecord, mode: .default, options: [.allowBluetooth, .defaultToSpeaker])
-    try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+      .playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
+    try audioSession.setActive(true)
+
+    if let availableInputs = audioSession.availableInputs {
+      for input in availableInputs {
+        print(input)
+        if input.portType == .headsetMic {
+          try audioSession.setPreferredInput(input)
+          print("Set preferred input to: \(input.portName)")
+        }
+      }
+    }
 
     inputNode = audioEngine.inputNode
     inputNode?.removeTap(onBus: 0)
