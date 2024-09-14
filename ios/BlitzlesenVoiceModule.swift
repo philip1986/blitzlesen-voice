@@ -305,16 +305,17 @@ public class Voice {
 
     print("start recognition")
     recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
+
       if isComplete { return }
       if error != nil {
-        if error!._code != 1110 {
-          self.stopRecording()
-          print("error \(error!.localizedDescription)")
-          if !isComplete {
-            isComplete = true
-            completion(error, nil, nil, nil)
-          }
+
+        self.stopRecording()
+        print("error \(error!.localizedDescription)")
+        if !isComplete {
+          isComplete = true
+          completion(error, nil, nil, nil)
         }
+
         return
       }
 
